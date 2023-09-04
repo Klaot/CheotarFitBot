@@ -1,0 +1,18 @@
+{
+  "name": "chebotarbot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "nodemon index.js",
+  "scripts": {
+    "dev": "nodemon index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/node-telegram-bot-api": "^0.61.7",
+    "dotenv": "^16.3.1",
+    "googleapis": "^124.0.0",
+    "node-telegram-bot-api": "^0.61.0",
+    "nodemon": "^3.0.1"
+  }
+}
