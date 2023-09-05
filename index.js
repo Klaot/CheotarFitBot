@@ -54,7 +54,7 @@ const genderButton = {
 
 const welcomeMessage = `Привет!👋 
 
-Я - Егор Чеботарь, фитнес тренер, с большим опытом в спорте, помогаю людям,  стать сильными, стройными, жизнерадостными и красивыми! 💪🌟
+Я - Егор Чеботарь, фитнес тренер, с большим опытом в спорте, помогаю людям,  стать сильными, стройными, жизнерадостными и красивыми! 💪
 
 Для того, чтобы вы смогли достичь своей цели, максимально честно ответьте на несколько вопросов в анкете, и я обязательно свяжусь с вами.👌`;
 
@@ -79,43 +79,68 @@ bot.on("message", async (msg) => {
   } else if (msg.text === "Анкета заполнена. Спасибо!") {
     return;
   } else if (isFillingSurvey) {
-    const answer = msg.text.trim() || "-";
-
-    if (currentQuestion === 0) {
-      chatName = answer;
-      answers.push(
-        `Вопрос ${currentQuestion + 1}: ${
-          questions[currentQuestion]
-        }\nОтвет: ${answer}`
-      );
-    } else {
-      answers.push(
-        `Вопрос ${currentQuestion + 1}: ${
-          questions[currentQuestion]
-        }\nОтвет: ${answer}`
-      );
-    }
-
-    // Блок отрабатывает когда анкета заканчивается.
-
-    if (currentQuestion < questions.length - 1) {
-      currentQuestion++;
+    if (currentQuestion < questions.length) {
+      if (questions[currentQuestion] === "Ф.И.О.") {
+        chatName = msg.text; // Сохраняем значение в переменной chatName
+      }
       if (questions[currentQuestion] === "Укажите ваш пол:") {
-        bot.sendMessage(chatId, `${questions[currentQuestion]}`, genderButton);
-      } else {
+        const genderResponse = msg.text.trim().toLowerCase();
+        if (genderResponse === "мужской" || genderResponse === "женский") {
+          const answer = msg.text; // Правильный ответ
+          answers.push(
+            `Вопрос ${currentQuestion + 1}: ${
+              questions[currentQuestion]
+            }\nОтвет: ${answer}`
+          );
+          currentQuestion++;
+          if (currentQuestion < questions.length) {
+            bot.sendMessage(
+              chatId,
+              `${questions[currentQuestion]}`,
+              defaultButtons
+            );
+          } else {
+            bot.sendMessage(chatId, "Анкета заполнена. Спасибо!");
+
+            // Создание файла на Google Диске
+            await saveAnswersToGoogleDrive(chatName, answers);
+
+            isFillingSurvey = false;
+            return;
+          }
+        } else {
+          // Если пользователь ввел некорректный ответ на вопрос о поле, напоминаем ему выбрать из вариантов кнопок
+          bot.sendMessage(
+            chatId,
+            "Пожалуйста, выберите один из вариантов кнопок (Мужской или Женский).",
+            genderButton
+          );
+        }
+        return;
+      }
+      // Остальная логика обработки ответов на вопросы
+      const answer = msg.text.trim() || "-";
+      answers.push(
+        `Вопрос ${currentQuestion + 1}: ${
+          questions[currentQuestion]
+        }\nОтвет: ${answer}`
+      );
+      currentQuestion++;
+      if (currentQuestion < questions.length) {
         bot.sendMessage(
           chatId,
           `${questions[currentQuestion]}`,
           defaultButtons
         );
+      } else {
+        bot.sendMessage(chatId, "Анкета заполнена. Спасибо!");
+
+        // Создание файла на Google Диске
+        await saveAnswersToGoogleDrive(chatName, answers);
+
+        isFillingSurvey = false;
+        return;
       }
-    } else {
-      bot.sendMessage(chatId, "Анкета заполнена. Спасибо!");
-
-      // Создание файла на Google Диске
-      await saveAnswersToGoogleDrive(chatName, answers);
-
-      isFillingSurvey = false;
     }
   }
 });
