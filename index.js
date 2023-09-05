@@ -57,6 +57,8 @@ const welcomeMessage = `Привет!👋
 app.post(`/webhook/${token}`, (req, res) => {
   const { message } = req.body;
 
+  console.log("message", message);
+
   if (message && message.text) {
     const chatId = message.chat.id;
     const text = message.text;
