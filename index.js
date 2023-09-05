@@ -55,11 +55,11 @@ const welcomeMessage = `Привет!👋
 Для того, чтобы вы смогли достичь своей цели, максимально честно ответьте на несколько вопросов в анкете, и я обязательно свяжусь с вами.👌`;
 
 app.post(`/webhook/${token}`, (req, res) => {
-  const { message, text } = req.body;
+  const { message } = req.body;
 
-  if (message && text) {
+  if (message && message.text) {
     const chatId = message.chat.id;
-    const text = text;
+    const text = message.text;
 
     if (text === "/start") {
       bot.sendPhoto(chatId, "./assets/egor.jpg", {
