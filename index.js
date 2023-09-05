@@ -1,9 +1,15 @@
+const express = require("express");
 const TelegramBot = require("node-telegram-bot-api");
-require("dotenv").config();
-const questions = require("./questions/questions");
 const { saveAnswersToGoogleDrive } = require("./api/googleApi");
+const questions = require("./questions/questions");
 
+// Ваш токен Telegram бота
 const token = process.env.TELEGRAM_API;
+
+// Создаем экземпляр Express
+const app = express();
+
+// Создаем экземпляр Telegram бота
 const bot = new TelegramBot(token, { polling: true });
 
 let currentQuestion = 0;
@@ -130,4 +136,17 @@ bot.on("message", async (msg) => {
       }
     }
   }
+});
+
+// Добавьте обработчик для Express.js
+app.post(`/webhook/${token}`, (req, res) => {
+  // В этом обработчике можно обрабатывать входящие запросы от Telegram, если это необходимо
+  // req.body содержит данные, отправленные Telegram
+  res.sendStatus(200); // Отправляем статус 200, чтобы подтвердить, что запрос получен
+});
+
+// Запускаем Express.js сервер
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
