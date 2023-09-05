@@ -24,19 +24,6 @@ function startSurvey(chatId) {
   );
 }
 
-// function restartSurvey(chatId) {
-//   currentQuestion = 0;
-//   answers = [];
-//   chatName = "";
-
-//   isFillingSurvey = true;
-
-//   bot.sendMessage(
-//     chatId,
-//     `Начнем анкету заново. Ответьте на следующий вопрос: ${questions[currentQuestion]}`
-//   );
-// }
-
 const defaultButtons = {
   reply_markup: {
     keyboard: [[{ text: "Заполнить анкету" }]],
