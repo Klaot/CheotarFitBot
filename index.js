@@ -11,6 +11,10 @@ app.use(bodyParser.json());
 const token = process.env.TELEGRAM_API;
 const bot = new TelegramBot(token);
 
+const webhookUrl = `${process.env.API_ADRESS}webhook/${token}`;
+
+bot.setWebHook(webhookUrl);
+
 let currentQuestion = 0;
 let answers = [];
 let isFillingSurvey = false;
