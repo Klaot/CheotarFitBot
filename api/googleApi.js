@@ -4,7 +4,7 @@ const { google } = require("googleapis");
 const SCOPE = [process.env.SCOPE];
 
 const auth = new google.auth.GoogleAuth({
-  keyFile: process.env.GOOGLE_JSON_API,
+  keyFile: process.env.API_JSON,
   scopes: SCOPE,
 });
 
