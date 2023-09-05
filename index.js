@@ -1,16 +1,15 @@
 const express = require("express");
+const bodyParser = require("body-parser");
 const TelegramBot = require("node-telegram-bot-api");
-const { saveAnswersToGoogleDrive } = require("./api/googleApi");
+require("dotenv").config();
 const questions = require("./questions/questions");
+const { saveAnswersToGoogleDrive } = require("./api/googleApi");
 
-// Ваш токен Telegram бота
-const token = process.env.TELEGRAM_API;
-
-// Создаем экземпляр Express
 const app = express();
+app.use(bodyParser.json());
 
-// Создаем экземпляр Telegram бота
-const bot = new TelegramBot(token, { polling: true });
+const token = process.env.TELEGRAM_API;
+const bot = new TelegramBot(token);
 
 let currentQuestion = 0;
 let answers = [];
@@ -51,35 +50,72 @@ const welcomeMessage = `Привет!👋
 
 Для того, чтобы вы смогли достичь своей цели, максимально честно ответьте на несколько вопросов в анкете, и я обязательно свяжусь с вами.👌`;
 
-bot.onText(/\/start/, async (msg) => {
-  const chatId = msg.chat.id;
+app.post(`/webhook/${token}`, (req, res) => {
+  const { message } = req.body;
 
-  await bot.sendPhoto(chatId, "./assets/egor.jpg", {
-    caption: welcomeMessage,
+  if (message && message.text) {
+    const chatId = message.chat.id;
+    const text = message.text;
 
-    reply_markup: {
-      keyboard: [[{ text: "Заполнить анкету" }]],
-      resize_keyboard: true,
-    },
-  });
-});
+    if (text === "/start") {
+      bot.sendPhoto(chatId, "./assets/egor.jpg", {
+        caption: welcomeMessage,
+        reply_markup: {
+          keyboard: [[{ text: "Заполнить анкету" }]],
+          resize_keyboard: true,
+        },
+      });
+    } else if (text === "Заполнить анкету") {
+      startSurvey(chatId);
+    } else if (text === "Анкета заполнена. Спасибо!") {
+      // Обработка завершения анкеты
+    } else if (isFillingSurvey) {
+      if (currentQuestion < questions.length) {
+        if (questions[currentQuestion] === "Ф.И.О.") {
+          chatName = text; // Сохраняем значение в переменной chatName
+        }
+        if (questions[currentQuestion] === "Укажите ваш пол:") {
+          const genderResponse = text.trim().toLowerCase();
+          if (genderResponse === "мужской" || genderResponse === "женский") {
+            const answer = text; // Правильный ответ
+            answers.push(
+              `Вопрос ${currentQuestion + 1}: ${
+                questions[currentQuestion]
+              }\nОтвет: ${answer}`
+            );
+            currentQuestion++;
+            if (currentQuestion < questions.length) {
+              bot.sendMessage(
+                chatId,
+                `${questions[currentQuestion]}`,
+                defaultButtons
+              );
+            } else {
+              bot.sendMessage(chatId, "Анкета заполнена. Спасибо!");
 
-bot.on("message", async (msg) => {
-  const chatId = msg.chat.id;
-
-  if (msg.text === "Заполнить анкету") {
-    startSurvey(chatId);
-  } else if (msg.text === "Анкета заполнена. Спасибо!") {
-    return;
-  } else if (isFillingSurvey) {
-    if (currentQuestion < questions.length) {
-      if (questions[currentQuestion] === "Ф.И.О.") {
-        chatName = msg.text; // Сохраняем значение в переменной chatName
-      }
-      if (questions[currentQuestion] === "Укажите ваш пол:") {
-        const genderResponse = msg.text.trim().toLowerCase();
-        if (genderResponse === "мужской" || genderResponse === "женский") {
-          const answer = msg.text; // Правильный ответ
+              // Создание файла на Google Диске
+              saveAnswersToGoogleDrive(chatName, answers)
+                .then(() => {
+                  isFillingSurvey = false;
+                })
+                .catch((error) => {
+                  console.error(
+                    "Ошибка при сохранении на Google Диске:",
+                    error
+                  );
+                });
+            }
+          } else {
+            // Если пользователь ввел некорректный ответ на вопрос о поле, напоминаем ему выбрать из вариантов кнопок
+            bot.sendMessage(
+              chatId,
+              "Пожалуйста, выберите один из вариантов кнопок (Мужской или Женский).",
+              genderButton
+            );
+          }
+        } else {
+          // Остальная логика обработки ответов на вопросы
+          const answer = text.trim() || "-";
           answers.push(
             `Вопрос ${currentQuestion + 1}: ${
               questions[currentQuestion]
@@ -96,57 +132,23 @@ bot.on("message", async (msg) => {
             bot.sendMessage(chatId, "Анкета заполнена. Спасибо!");
 
             // Создание файла на Google Диске
-            await saveAnswersToGoogleDrive(chatName, answers);
-
-            isFillingSurvey = false;
-            return;
+            saveAnswersToGoogleDrive(chatName, answers)
+              .then(() => {
+                isFillingSurvey = false;
+              })
+              .catch((error) => {
+                console.error("Ошибка при сохранении на Google Диске:", error);
+              });
           }
-        } else {
-          // Если пользователь ввел некорректный ответ на вопрос о поле, напоминаем ему выбрать из вариантов кнопок
-          bot.sendMessage(
-            chatId,
-            "Пожалуйста, выберите один из вариантов кнопок (Мужской или Женский).",
-            genderButton
-          );
         }
-        return;
-      }
-      // Остальная логика обработки ответов на вопросы
-      const answer = msg.text.trim() || "-";
-      answers.push(
-        `Вопрос ${currentQuestion + 1}: ${
-          questions[currentQuestion]
-        }\nОтвет: ${answer}`
-      );
-      currentQuestion++;
-      if (currentQuestion < questions.length) {
-        bot.sendMessage(
-          chatId,
-          `${questions[currentQuestion]}`,
-          defaultButtons
-        );
-      } else {
-        bot.sendMessage(chatId, "Анкета заполнена. Спасибо!");
-
-        // Создание файла на Google Диске
-        await saveAnswersToGoogleDrive(chatName, answers);
-
-        isFillingSurvey = false;
-        return;
       }
     }
   }
+
+  res.sendStatus(200);
 });
 
-// Добавьте обработчик для Express.js
-app.post(`/webhook/${token}`, (req, res) => {
-  // В этом обработчике можно обрабатывать входящие запросы от Telegram, если это необходимо
-  // req.body содержит данные, отправленные Telegram
-  res.sendStatus(200); // Отправляем статус 200, чтобы подтвердить, что запрос получен
-});
-
-// Запускаем Express.js сервер
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`Express.js server is listening on port ${port}`);
 });
