@@ -1,14 +1,12 @@
-const express = require("express");
-const bodyParser = require("body-parser");
-const TelegramBot = require("node-telegram-bot-api");
+import TelegramBot from "node-telegram-bot-api";
+import { questions } from "./questions/questions";
+import express from "express";
+import { saveAnswersToGoogleDrive } from "./api/googleApi";
+
 require("dotenv").config();
-const questions = require("./questions/questions");
-const { saveAnswersToGoogleDrive } = require("./api/googleApi");
-
 const app = express();
-app.use(bodyParser.json());
 
-const token = process.env.TELEGRAM_API;
+const token = process.env.TELEGRAM_API ?? "";
 const bot = new TelegramBot(token);
 
 const webhookUrl = `${process.env.API_ADRESS}webhook/${token}`;
@@ -16,11 +14,11 @@ const webhookUrl = `${process.env.API_ADRESS}webhook/${token}`;
 bot.setWebHook(webhookUrl);
 
 let currentQuestion = 0;
-let answers = [];
+let answers: string[] = [];
 let isFillingSurvey = false;
-let chatName = "";
+let chatName: string = "";
 
-function startSurvey(chatId) {
+function startSurvey(chatId: TelegramBot.ChatId) {
   currentQuestion = 0;
   answers = [];
   chatName = "";
@@ -54,10 +52,8 @@ const welcomeMessage = `Привет!👋
 
 Для того, чтобы вы смогли достичь своей цели, максимально честно ответьте на несколько вопросов в анкете, и я обязательно свяжусь с вами.👌`;
 
-app.post(`/webhook/${token}`, (req, res) => {
+app.post(`/webhook/${token}`, (req: any, res: any) => {
   const { message } = req.body;
-
-  console.log();
 
   if (message && message.text) {
     const chatId = message.chat.id;
