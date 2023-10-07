@@ -33,13 +33,6 @@ function startSurvey(chatId) {
   );
 }
 
-const defaultButtons = {
-  reply_markup: {
-    keyboard: [[{ text: "Заполнить анкету" }]],
-    resize_keyboard: true,
-  },
-};
-
 const genderButton = {
   reply_markup: {
     keyboard: [[{ text: "Мужской" }, { text: "Женский" }]],
@@ -66,10 +59,6 @@ app.post(`/webhook/${token}`, (req, res) => {
     if (text === "/start") {
       bot.sendPhoto(chatId, "./assets/egor.jpg", {
         caption: welcomeMessage,
-        reply_markup: {
-          keyboard: [[{ text: "Заполнить анкету" }]],
-          resize_keyboard: true,
-        },
       });
     } else if (text === "Заполнить анкету") {
       startSurvey(chatId);
@@ -91,11 +80,7 @@ app.post(`/webhook/${token}`, (req, res) => {
             );
             currentQuestion++;
             if (currentQuestion < questions.length) {
-              bot.sendMessage(
-                chatId,
-                `${questions[currentQuestion]}`,
-                defaultButtons
-              );
+              bot.sendMessage(chatId, `${questions[currentQuestion]}`);
             } else {
               bot.sendMessage(chatId, "Анкета заполнена. Спасибо!");
 
@@ -129,11 +114,7 @@ app.post(`/webhook/${token}`, (req, res) => {
           );
           currentQuestion++;
           if (currentQuestion < questions.length) {
-            bot.sendMessage(
-              chatId,
-              `${questions[currentQuestion]}`,
-              defaultButtons
-            );
+            bot.sendMessage(chatId, `${questions[currentQuestion]}`);
           } else {
             bot.sendMessage(chatId, "Анкета заполнена. Спасибо!");
 
